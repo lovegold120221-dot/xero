@@ -1509,15 +1509,12 @@ export function BeatriceAgent({
   const triggerSandboxShowcase = (toolName: string, serviceName: string, taskDescription?: string) => {
     const messages = generateWorkMessages(taskDescription || serviceName, toolName);
 
-    const messageHtml = messages.map((msg, i) => `
-      <div class="thinking-msg" style="animation-delay:${0.5 + i * 1.8}s">
-        <div class="msg-avatar">B</div>
-        <div class="msg-bubble">
-          <div class="msg-text">${msg}</div>
-          <div class="msg-time">just now</div>
-        </div>
-      </div>
-    `).join('\n');
+    // Speak messages as voice through Live API with staggered timing
+    messages.forEach((msg, i) => {
+      setTimeout(() => {
+        sendTextToLive(msg);
+      }, 600 + i * 2200);
+    });
 
     const thinkingPage = `<!DOCTYPE html>
 <html lang="en">
@@ -1539,10 +1536,10 @@ body {
 .thinking-container {
   max-width: 560px;
   width: 100%;
+  text-align: center;
 }
 .thinking-header {
-  text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 .thinking-header h2 {
   color: #d0a78b;
@@ -1553,87 +1550,29 @@ body {
 .thinking-header p {
   color: rgba(255,255,255,0.4);
   font-size: 12px;
-  margin-top: 6px;
+  margin-top: 8px;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
-.thinking-msgs {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.thinking-msg {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(12px);
-  animation: msgIn 0.5s ease forwards;
-}
-.msg-avatar {
-  width: 32px;
-  height: 32px;
+.thinking-orb {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #d0a78b, #c5957a);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0a0a1a;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-.msg-bubble {
-  background: rgba(208,167,139,0.12);
-  border: 1px solid rgba(208,167,139,0.2);
-  border-radius: 4px 16px 16px 16px;
-  padding: 12px 16px;
-  max-width: 480px;
-}
-.msg-text {
-  color: rgba(255,255,255,0.85);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.msg-time {
-  color: rgba(255,255,255,0.25);
-  font-size: 10px;
-  margin-top: 6px;
-  letter-spacing: 0.5px;
-}
-.typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 0 8px 42px;
-  opacity: 0;
-  animation: msgIn 0.5s ease 0.3s forwards;
-}
-.typing-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(208,167,139,0.5);
-  animation: typingBounce 1.4s ease-in-out infinite;
-}
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes msgIn {
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-8px); }
+  background: radial-gradient(circle at 30% 30%, #d0a78b, #a07050);
+  animation: orbPulse 1.8s ease-in-out infinite;
+  box-shadow: 0 0 60px rgba(208,167,139,0.3), 0 0 120px rgba(208,167,139,0.1);
 }
 .working-footer {
-  text-align: center;
-  margin-top: 32px;
   color: rgba(255,255,255,0.2);
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
   animation: pulse 2s ease-in-out infinite;
+}
+@keyframes orbPulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
 }
 @keyframes pulse {
   0%, 100% { opacity: 0.2; }
@@ -1644,16 +1583,9 @@ body {
 <body>
 <div class="thinking-container">
   <div class="thinking-header">
+    <div class="thinking-orb"></div>
     <h2>✦ Beatrice is working</h2>
     <p>Generating your ${serviceName.replace(/_/g, ' ')}</p>
-  </div>
-  <div class="thinking-msgs">
-    ${messageHtml}
-  </div>
-  <div class="typing-indicator">
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
   </div>
   <div class="working-footer">Processing &bull; Please hold</div>
 </div>
@@ -5048,29 +4980,140 @@ ${historyContext}
           {/* Skills Dashboard */}
           <section className="space-y-3">
             <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-muted)] mb-3 px-1">Skills & Capabilities</h2>
+
+            {/* Google Services */}
             <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
               <div className="px-5 py-3 border-b border-[var(--border-light)]">
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Google Services</span>
               </div>
               {[
-                { key: 'gmail', label: 'Gmail', desc: 'Read and send emails' },
-                { key: 'calendar', label: 'Calendar', desc: 'View events and schedules' },
+                { key: 'gmail', label: 'Gmail', desc: 'Read, send, and manage emails' },
+                { key: 'calendar', label: 'Calendar', desc: 'View and create events' },
                 { key: 'tasks', label: 'Tasks', desc: 'Manage to-do lists' },
-                { key: 'drive', label: 'Drive', desc: 'List and search files' },
+                { key: 'drive', label: 'Drive', desc: 'List, search, and manage files' },
                 { key: 'youtube', label: 'YouTube', desc: 'Search and discover videos' },
+                { key: 'contacts', label: 'Contacts', desc: 'Manage Google Contacts' },
+                { key: 'workspace', label: 'Workspace', desc: 'Sheets, Docs, generic API' },
+                { key: 'location', label: 'Location', desc: 'Browser geolocation' },
               ].map((s, i, arr) => (
-                <div key={s.key} className={`px-5 py-4 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
                   <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[14px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
                   </div>
                   <button
                     onClick={onLogin}
                     aria-pressed={!!googleToken}
-                    className={`w-10 h-6 rounded-full transition-all duration-300 flex items-center shrink-0 cursor-pointer ${googleToken ? 'bg-[var(--accent)]' : 'bg-zinc-800'}`}
+                    className={`w-9 h-5 rounded-full transition-all duration-300 flex items-center shrink-0 cursor-pointer ${googleToken ? 'bg-[var(--accent)]' : 'bg-zinc-800'}`}
                   >
-                    <span className={`block w-4.5 h-4.5 rounded-full bg-white transition-all duration-300 shadow-md ${googleToken ? 'ml-[18px]' : 'ml-[3px]'}`} />
+                    <span className={`block w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-md ${googleToken ? 'ml-[17px]' : 'ml-[3px]'}`} />
                   </button>
+                </div>
+              ))}
+            </div>
+
+            {/* WhatsApp Tools */}
+            <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
+              <div className="px-5 py-3 border-b border-[var(--border-light)]">
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">WhatsApp Tools</span>
+              </div>
+              {[
+                { key: 'wa_send', label: 'Send Messages', desc: 'Text, image, video, audio, documents' },
+                { key: 'wa_groups', label: 'Groups', desc: 'Create, manage, and message groups' },
+                { key: 'wa_read', label: 'Read Chats', desc: 'Message history and conversations' },
+                { key: 'wa_contacts', label: 'Contacts', desc: 'Browse, block, and resolve contacts' },
+                { key: 'wa_calls', label: 'Calls', desc: 'Voice/video call history' },
+                { key: 'wa_media', label: 'Media', desc: 'Images, videos, stickers, audio, documents' },
+                { key: 'wa_memory', label: 'Memory Sync', desc: 'Auto-save conversations to memory' },
+                { key: 'wa_translate', label: 'Translation', desc: 'Translate messages between languages' },
+                { key: 'wa_admin', label: 'Admin & Config', desc: 'Permissions, config, overview' },
+              ].map((s, i, arr) => (
+                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                  <div className="flex flex-col gap-0.5 pr-4">
+                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  </div>
+                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Belgian Admin Tools */}
+            <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
+              <div className="px-5 py-3 border-b border-[var(--border-light)]">
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Belgian Admin Tools</span>
+              </div>
+              {[
+                { key: 'be_company', label: 'Company Lookup', desc: 'KBO/CBE company search by name or number' },
+                { key: 'be_vat', label: 'VIES VAT Validate', desc: 'EU VAT number validation' },
+                { key: 'be_peppol', label: 'Peppol Invoice', desc: 'Generate Peppol-compliant e-invoices' },
+                { key: 'be_tax', label: 'Tax Calendar', desc: 'Belgian tax deadline tracker' },
+                { key: 'be_property', label: 'Registration Tax', desc: 'Property registration tax calculator' },
+                { key: 'be_itsme', label: 'Itsme Navigator', desc: 'Itsme portal navigation guide' },
+                { key: 'be_language', label: 'Language Bridge', desc: 'FR/NL/EN admin letter translation' },
+                { key: 'be_social', label: 'Social Security', desc: 'Ziekenfonds/Mutualite guidance' },
+                { key: 'be_labor', label: 'Labor Law', desc: 'Notice, indexation, 13th month explainer' },
+                { key: 'be_mobility', label: 'Mobility Planner', desc: 'SNCB/NMBS train planning (iRail)' },
+              ].map((s, i, arr) => (
+                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                  <div className="flex flex-col gap-0.5 pr-4">
+                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  </div>
+                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Sandbox & Sub-Agents */}
+            <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
+              <div className="px-5 py-3 border-b border-[var(--border-light)]">
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Sandbox &amp; Sub-Agents</span>
+              </div>
+              {[
+                { key: 'sb_website', label: 'Website Generator', desc: 'Full HTML/CSS websites with Pixabay images' },
+                { key: 'sb_documents', label: 'Document Generator', desc: '12 professional templates (invoice, NDA, contract, etc.)' },
+                { key: 'sb_sandbox', label: 'Sub-Agent Cascade', desc: 'Complex multi-step task delegation' },
+                { key: 'sb_browser', label: 'Browser Automation', desc: 'Cerebras + Browser-Use web automation' },
+                { key: 'sb_cerebras', label: 'Cerebras Chat', desc: 'High-speed text generation (120B param)' },
+                { key: 'sb_hermes', label: 'Hermes Multitask', desc: 'Chain-of-thought + GitHub API + code generation' },
+                { key: 'sb_worker', label: 'Eburon Worker', desc: 'Fallback text generation' },
+              ].map((s, i, arr) => (
+                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                  <div className="flex flex-col gap-0.5 pr-4">
+                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  </div>
+                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Memory & Context */}
+            <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
+              <div className="px-5 py-3 border-b border-[var(--border-light)]">
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Memory &amp; Context</span>
+              </div>
+              {[
+                { key: 'mem_save', label: 'Save to Memory', desc: 'Store information for later recall' },
+                { key: 'mem_search', label: 'Search Memory', desc: 'Retrieve past conversations and facts' },
+                { key: 'mem_session', label: 'Session Context', desc: 'Maintain conversation coherence' },
+                { key: 'mem_summary', label: 'Auto-Summary', desc: 'Periodic conversation summarization' },
+              ].map((s, i, arr) => (
+                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                  <div className="flex flex-col gap-0.5 pr-4">
+                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  </div>
+                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
+                  </span>
                 </div>
               ))}
             </div>
