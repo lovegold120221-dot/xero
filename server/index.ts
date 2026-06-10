@@ -396,9 +396,15 @@ const getMsg = (e: any) => e?.message || String(e);
         const pollStart = Date.now();
         const pollTimeout = 30000;
         while (!qrCode && Date.now() - pollStart < pollTimeout) {
-          await new Promise(resolve => setTimeout(resolve, 400));
+          await new Promise(resolve => setTimeout(resolve, 500));
           const refresh = waManager!.getStatus(req.params.userId);
-          qrCode = refresh?.qrCode || undefined;
+          if (!refresh) break;
+          qrCode = refresh.qrCode || undefined;
+          
+          // Exit early if session failed or already paired
+          if (refresh.status === 'error' || refresh.status === 'paired' || refresh.status === 'disconnected') {
+            break;
+          }
         }
       }
       if (!qrCode) {

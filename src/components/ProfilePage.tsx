@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Power, Check, Settings, X, Save, Activity, Video, MessageSquare, Globe, User, Mail, FileText, AlertCircle, LogOut, Upload, Trash2, Folder, Download, ExternalLink, Image } from 'lucide-react';
+import { Loader2, Power, Check, Settings, X, Save, Activity, Video, MessageSquare, Globe, User, Mail, FileText, AlertCircle, LogOut, Upload, Trash2, Folder, Download, ExternalLink, Image, Eye, Copy } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { supabase } from '../lib/supabase';
@@ -97,6 +97,8 @@ export function ProfilePage({
   const [workspaceOutputs, setWorkspaceOutputs] = useState<WorkspaceOutput[]>([]);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<WorkspaceOutput | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -497,17 +499,12 @@ export function ProfilePage({
                   <div className="flex items-center gap-2 shrink-0">
                     {w.textContent && (
                       <button
-                        onClick={() => {
-                          const blob = new Blob([w.textContent!], { type: w.mimeType });
-                          const url = URL.createObjectURL(blob);
-                          window.open(url, '_blank');
-                          setTimeout(() => URL.revokeObjectURL(url), 60000);
-                        }}
+                        onClick={() => setPreviewItem(w)}
                         className="p-2 rounded-full active:bg-white/5 text-zinc-500 hover:text-[#d0a78b] transition-colors"
                         aria-label="Preview"
                         title="Preview"
                       >
-                        <Download className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </button>
                     )}
                     <button
@@ -682,6 +679,44 @@ export function ProfilePage({
         </section>
 
       </div>
+
+      {previewItem && previewItem.textContent && (
+        <div className="fixed inset-0 z-[200] bg-[var(--bg-base)] flex flex-col">
+          <header className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--bg-glass)] shrink-0">
+            <span className="text-[13px] font-semibold truncate">{previewItem.title}</span>
+            <div className="flex-1" />
+            <button
+              onClick={() => {
+                const blob = new Blob([previewItem.textContent!], { type: previewItem.mimeType });
+                const url = URL.createObjectURL(blob);
+                navigator.clipboard.writeText(url);
+                setCopiedUrl(true);
+                setTimeout(() => setCopiedUrl(false), 2000);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-xs font-bold hover:bg-[var(--bg-glass-hover)] transition-all"
+              title="Copy blob URL"
+            >
+              {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copiedUrl ? 'Copied!' : 'Copy URL'}
+            </button>
+            <button
+              onClick={() => { setPreviewItem(null); setCopiedUrl(false); }}
+              className="p-1.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass-hover)] transition-all"
+              aria-label="Close preview"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </header>
+          <div className="flex-1 bg-white relative overflow-hidden">
+            <iframe
+              srcDoc={previewItem.mimeType === 'text/html' ? previewItem.textContent : `<pre style="font-family:monospace;white-space:pre-wrap;padding:20px;font-size:14px;color:#1f2937">${previewItem.textContent.replace(/</g, '&lt;')}</pre>`}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts"
+              title={previewItem.title}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

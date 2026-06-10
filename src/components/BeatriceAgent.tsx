@@ -5,7 +5,8 @@ import { supabase, handleDbError } from '../lib/supabase';
 import { LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
 import { AudioRecorder, AudioStreamer } from '../lib/audio';
 import { listKnowledgeFiles, fetchKnowledgeFileContent } from '../lib/supabaseStorage';
-import { Loader2, Mic, Square, Check, Settings, X, Save, Video, MessageSquare, Monitor, ChevronDown, Moon, Sun } from 'lucide-react';
+import { Loader2, Mic, Square, Check, Settings, X, Save, Video, MessageSquare, Monitor, ChevronDown, Moon, Sun, Mail, Calendar, ListChecks, HardDrive, Users, FileText, MapPin, Building2, Shield, Calculator, Languages, Heart, Scale, Train, Globe, FileOutput, Network, Zap, Search, GitBranch, Cpu, Fingerprint } from 'lucide-react';
+import { ToggleSwitch } from './ToggleSwitch';
 import { AnimatePresence, motion } from 'motion/react';
 import { UnifiedTranscript } from './UnifiedTranscript';
 import { saveOutput, uploadToDrive } from '../lib/workspace';
@@ -747,7 +748,12 @@ const extractHtmlArtifact = (raw: string) => {
     return '<!DOCTYPE html>\n' + cleaned.slice(htmlIndex).trim();
   }
 
-  throw new Error('The generator returned text instead of a live HTML artifact.');
+  // Fallback: If it's just raw text or markdown but we expected HTML, wrap it in a basic pre
+  if (cleaned.length > 0) {
+    return `<!DOCTYPE html><html><body style="background:#0f172a;color:#f1f5f9;font-family:sans-serif;padding:2rem;"><pre style="white-space:pre-wrap;word-break:break-word;">${cleaned.replace(/</g, '&lt;')}</pre></body></html>`;
+  }
+
+  throw new Error('The generator returned an empty result.');
 };
 
 const inferDocumentTemplate = (title: string, prompt: string, explicit?: string) => {
@@ -1306,25 +1312,21 @@ export function BeatriceAgent({
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background-color: var(--sd-bg); color: var(--sd-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-    .device-container { width: 100%; max-width: 480px; height: 100vh; background-color: var(--sd-bg); display: flex; flex-direction: column; position: relative; overflow: hidden; }
-    @media (min-width: 480px) { .device-container { border: 10px solid var(--sd-device-border); border-radius: 44px; height: 92vh; max-height: 900px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8); } }
-    .header { background-color: var(--sd-bg); z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px 24px; border-bottom: 1px solid var(--sd-header-border); flex-shrink: 0; }
-    .header-title { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; color: var(--sd-text); }
-    .dropdown-pill { background-color: var(--sd-bg); border: 1px solid var(--sd-pill-border); border-radius: 12px; padding: 6px 10px; display: flex; align-items: center; gap: 8px; }
-    .main-body { flex-grow: 1; display: flex; flex-direction: column; padding: 16px; gap: 16px; overflow: hidden; }
-    .workspace-card { background: var(--sd-card); border: 1px solid var(--sd-card-border); border-radius: 18px; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; min-height: 0; }
-    .document-workspace { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .view-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 32px; flex-shrink: 0; }
+    .device-container { width: 100%; height: 100%; background-color: var(--sd-bg); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    .main-body { flex-grow: 1; display: flex; flex-direction: column; padding: 0; gap: 0; overflow: hidden; }
+    .workspace-card { background: var(--sd-card); border: none; border-radius: 0; padding: 0; flex-grow: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; min-height: 0; }
+    .document-workspace { position: absolute; inset: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+    .view-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 32px; flex-shrink: 0; padding: 8px 16px; background: var(--sd-surface); border-bottom: 1px solid var(--sd-header-border); }
     .processing-header { font-size: 0.85rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--sd-text-muted); display: flex; align-items: center; gap: 6px; }
     .processing-icon { color: var(--sd-accent); }
     .document-preview-wrapper { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; position: relative; overflow: hidden; }
-    .document-skeleton { background: var(--sd-surface); border: 1px solid var(--sd-card-border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); width: 100%; height: 100%; overflow-y: auto; padding: 24px 32px; color: var(--sd-text-doc); }
+    .document-skeleton { background: var(--sd-surface); border: none; border-radius: 0; width: 100%; height: 100%; overflow-y: auto; padding: 24px 32px; color: var(--sd-text-doc); }
     .document-skeleton::-webkit-scrollbar { width: 6px; }
     .document-skeleton::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .rendered-document { font-size: 0.85rem; line-height: 1.6; color: var(--sd-text-doc); font-family: "Helvetica Neue", Arial, sans-serif; text-align: left; }
     .rendered-document h1 { font-size: 1.4rem; font-weight: 700; color: var(--sd-text-doc); border-bottom: 2px solid var(--sd-accent); padding-bottom: 6px; margin-bottom: 14px; text-transform: uppercase; }
     .rendered-document h2 { font-size: 0.95rem; font-weight: 700; color: var(--sd-text-doc); border-bottom: 1px solid var(--sd-card-border); padding-bottom: 4px; margin-top: 18px; margin-bottom: 8px; text-transform: uppercase; }
-    .command-bar { background-color: var(--sd-cmd-bg); border: 1px solid var(--sd-cmd-border); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .command-bar { background-color: var(--sd-cmd-bg); border-top: 1px solid var(--sd-cmd-border); padding: 10px 18px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .cmd-prefix { color: #4ade80; font-size: 0.8rem; font-weight: bold; }
     .cmd-action { color: #60a5fa; font-size: 0.8rem; }
     .code-select-wrapper { position: relative; flex-grow: 1; display: flex; align-items: center; }
@@ -1333,7 +1335,7 @@ export function BeatriceAgent({
     .code-select-arrow { position: absolute; right: 0; pointer-events: none; color: var(--sd-text-muted); }
     
     /* WhatsApp VIEWS */
-    .wa-app { margin: -24px -32px; min-height: calc(100% + 48px); background: var(--sd-wa-bg); color: var(--sd-wa-text); display: flex; flex-direction: column; font-family: sans-serif; text-align: left; }
+    .wa-app { margin: 0; min-height: 100%; background: var(--sd-wa-bg); color: var(--sd-wa-text); display: flex; flex-direction: column; font-family: sans-serif; text-align: left; }
     .wa-header { background: var(--sd-wa-surface); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; font-weight: 500; }
     .wa-tabs { display: flex; background: var(--sd-wa-surface); border-bottom: 1px solid var(--sd-wa-border); }
     .wa-tab { flex: 1; text-align: center; padding: 12px 0; color: var(--sd-wa-muted); font-size: 0.85rem; }
@@ -1351,31 +1353,24 @@ export function BeatriceAgent({
     .wa-bubble.out { background: var(--sd-wa-bubble-out); }
 
     /* GMAIL VIEWS */
-    .gm-app { margin: -24px -32px; min-height: calc(100% + 48px); background: var(--sd-gm-bg); color: var(--sd-text); display: flex; flex-direction: column; font-family: sans-serif; text-align: left; }
+    .gm-app { margin: 0; min-height: 100%; background: var(--sd-gm-bg); color: var(--sd-text); display: flex; flex-direction: column; font-family: sans-serif; text-align: left; }
     .gm-header { padding: 12px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--sd-card-border); }
     .gm-search { flex-grow: 1; background: var(--sd-card-border); border-radius: 24px; padding: 10px 16px; color: var(--sd-text); font-size: 0.95rem; }
     .gm-row { display: flex; padding: 14px 16px; border-bottom: 1px solid var(--sd-card-border); gap: 14px; }
     .gm-sender { font-weight: 700; color: var(--sd-text); }
 
     /* BEATRICE APP */
-    .bea-app { margin: -24px -32px; min-height: calc(100% + 48px); background: var(--sd-bg); color: var(--sd-text); display: flex; flex-direction: column; text-align: left; padding: 20px; }
+    .bea-app { margin: 0; min-height: 100%; background: var(--sd-bg); color: var(--sd-text); display: flex; flex-direction: column; text-align: left; padding: 20px; }
     .bea-card { background: var(--sd-surface); border: 1px solid var(--sd-card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 
     /* WEB BROWSER */
-    .web-app { margin: -24px -32px; min-height: calc(100% + 48px); background: var(--sd-browser-bg); color: var(--sd-browser-text); display: flex; flex-direction: column; text-align: left; }
+    .web-app { margin: 0; min-height: 100%; background: var(--sd-browser-bg); color: var(--sd-browser-text); display: flex; flex-direction: column; text-align: left; }
     .web-chrome { background: #f1f5f9; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #cbd5e1; }
     .web-address { flex-grow: 1; background: #ffffff; border-radius: 16px; padding: 6px 12px; font-size: 0.85rem; color: #334155; text-align: center; border: 1px solid #e2e8f0; }
   </style>
 </head>
 <body>
   <div class="device-container" id="device-viewport">
-    <header class="header">
-      <div style="width:24px"></div>
-      <h1 class="header-title">Eburon PC</h1>
-      <div class="dropdown-pill">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-      </div>
-    </header>
     <div class="main-body">
       <div class="workspace-card doc-ready">
         <div class="document-workspace">
@@ -1435,6 +1430,10 @@ export function BeatriceAgent({
         "Hmm, this should look good on mobile too...",
         "Polishing the hover effects and transitions...",
         "Almost there! Just fixing a few alignment details...",
+        "Wait, I should probably use a better font for the headings...",
+        "Right, adding some nice subtle animations now...",
+        "Okay, let me check the contrast ratios... safety first, Boss.",
+        "Almost finished with the layout... just a few more tweaks.",
       ];
     } else if (toolName.includes('document') || toolName.includes('create_document')) {
       themeMessages = [
@@ -1445,6 +1444,10 @@ export function BeatriceAgent({
         "Adding styling to make it professional and clean...",
         "Checking the typography and spacing...",
         "Making sure everything flows well...",
+        "Hmm, I should rephrase this section to sound more professional...",
+        "Right, adding a clear conclusion now...",
+        "Okay, let me check the alignment of the signature block...",
+        "Almost done, just doing a final proofread for you, Boss.",
       ];
     } else if (toolName.includes('cerebras') || toolName.includes('browser') || toolName.includes('search') || toolName.includes('web')) {
       themeMessages = [
@@ -1453,6 +1456,11 @@ export function BeatriceAgent({
         "Found some relevant pages, extracting the key data...",
         "Parsing and organizing the information...",
         "Cross-referencing multiple sources...",
+        "Wait, this source looks interesting, let me dig deeper...",
+        "Hmm, okay, I'm seeing a pattern here...",
+        "Right, let me double check this fact...",
+        "Okay, synthesizing the results now...",
+        "Almost there, just verifying the latest updates...",
       ];
     } else if (toolName.includes('whatsapp') || toolName.includes('wa_')) {
       themeMessages = [
@@ -1460,6 +1468,8 @@ export function BeatriceAgent({
         "Syncing the latest messages...",
         "Processing the request through the WhatsApp bridge...",
         "Encrypting the payload for secure delivery...",
+        "Checking the connection status...",
+        "Right, almost synced up...",
       ];
     } else if (toolName.includes('gmail') || toolName.includes('calendar') || toolName.includes('google') || toolName.includes('drive')) {
       themeMessages = [
@@ -1467,6 +1477,8 @@ export function BeatriceAgent({
         "Fetching your data securely...",
         "Processing the results...",
         "Organizing the information from Google services...",
+        "Checking for any recent updates...",
+        "Right, almost have all the details...",
       ];
     } else if (toolName.includes('code') || toolName.includes('sandbox') || desc.includes('code') || desc.includes('app') || desc.includes('application')) {
       themeMessages = [
@@ -1476,6 +1488,10 @@ export function BeatriceAgent({
         "Adding error handling and edge cases...",
         "Reviewing the code for quality...",
         "Optimizing and cleaning up...",
+        "Hmm, I should refactor this part to be more efficient...",
+        "Right, adding comments and documentation now...",
+        "Okay, let me run a quick test on this module...",
+        "Almost there, just polishing the interface...",
       ];
     } else {
       themeMessages = [
@@ -1483,6 +1499,9 @@ export function BeatriceAgent({
         "Thinking through the best approach...",
         "Working on it step by step...",
         "Almost done, just verifying everything...",
+        "Hmm... interesting. Let me try something else.",
+        "Right, okay, I think I've got it.",
+        "Just a few more seconds, Boss.",
       ];
     }
 
@@ -1493,6 +1512,9 @@ export function BeatriceAgent({
       "hmm...",
       "oh! got it...",
       "right...",
+      "okay...",
+      "yeah...",
+      "just a second...",
     ];
 
     const result: string[] = [...genericMessages];
@@ -1508,92 +1530,473 @@ export function BeatriceAgent({
 
   const triggerSandboxShowcase = (toolName: string, serviceName: string, taskDescription?: string) => {
     const messages = generateWorkMessages(taskDescription || serviceName, toolName);
+    const safeName = serviceName.replace(/_/g, ' ');
+    const taskSlug = safeName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
 
-    // Speak messages as voice through Live API with staggered timing
-    messages.forEach((msg, i) => {
-      setTimeout(() => {
-        sendTextToLive(msg);
-      }, 600 + i * 2200);
-    });
+    // Tracker for continuous speech
+    let msgIndex = 0;
+    const speakNext = () => {
+      if (!isActiveRef.current) return;
+      
+      let msg = "";
+      if (msgIndex < messages.length) {
+        msg = messages[msgIndex++];
+      } else {
+        // Generic loopable fillers if thematic messages run out
+        const loopFillers = [
+          "Still working on it, Boss...",
+          "Almost there, just finalizing a few more details...",
+          "Just a moment longer...",
+          "Right, okay, I'm processing the last bits now...",
+          "Thinking through the final touches...",
+          "Nearly done, thanks for your patience, Boss.",
+          "Just finishing up the last few things...",
+        ];
+        msg = loopFillers[Math.floor(Math.random() * loopFillers.length)];
+      }
+
+      sendTextToLive(msg);
+      
+      // Schedule next message with some variability
+      // If we are in the loop phase, speak a bit less frequently
+      const baseDelay = msgIndex <= messages.length ? 3000 : 5000;
+      const nextDelay = baseDelay + Math.random() * 3000;
+      
+      // Check if task is still processing by looking at tasks state
+      // Since we don't have tasks state here easily without a ref, 
+      // we'll stop if we've reached a very high loop count or if session stopped
+      if (msgIndex < 50) { 
+        setTimeout(speakNext, nextDelay);
+      }
+    };
+
+    // Start speaking after a short initial delay
+    setTimeout(speakNext, 800);
 
     const thinkingPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Working...</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a0a1a 100%);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: system-ui, -apple-system, sans-serif;
-  padding: 20px;
-}
-.thinking-container {
-  max-width: 560px;
-  width: 100%;
-  text-align: center;
-}
-.thinking-header {
-  margin-bottom: 40px;
-}
-.thinking-header h2 {
-  color: #d0a78b;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-.thinking-header p {
-  color: rgba(255,255,255,0.4);
-  font-size: 12px;
-  margin-top: 8px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.thinking-orb {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 32px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #d0a78b, #a07050);
-  animation: orbPulse 1.8s ease-in-out infinite;
-  box-shadow: 0 0 60px rgba(208,167,139,0.3), 0 0 120px rgba(208,167,139,0.1);
-}
-.working-footer {
-  color: rgba(255,255,255,0.2);
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  animation: pulse 2s ease-in-out infinite;
-}
-@keyframes orbPulse {
-  0%, 100% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.08); opacity: 1; }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.6; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eburon PC - Sandbox Template Engine</title>
+  <style>
+    /* Global Reset & Base Styling */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #000000;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; overflow: hidden;
+    }
+
+    /* Rigid Device Viewport Wrapper (Restored to original sandbox height & width) */
+    .device-container {
+      width: 100%; height: 100%;
+      background-color: #000000; display: flex; flex-direction: column;
+      position: relative; overflow: hidden; 
+    }
+
+    /* --- Main Body Wrapper --- */
+    .main-body { flex-grow: 1; display: flex; flex-direction: column; padding: 0; gap: 0; overflow: hidden; }
+
+    /* ==================================================
+       DOMINANT WORKSPACE CARD
+       ================================================== */
+    .workspace-card {
+      background: linear-gradient(180deg, #121316 0%, #16171b 100%);
+      border: none; border-radius: 0; padding: 0;
+      flex-grow: 1; display: flex; flex-direction: column;
+      position: relative; overflow: hidden; min-height: 0; 
+    }
+
+    /* Subview 1: Initial Ready State */
+    .desktop-ready-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; width: 100%; height: 100%; transition: opacity 0.3s ease; }
+    .monitor-graphic { width: 160px; display: flex; flex-direction: column; align-items: center; opacity: 0.8; }
+    .monitor-screen { width: 100%; aspect-ratio: 16 / 10; background: linear-gradient(135deg, #1e2025 0%, #0d0e12 100%); border: 4px solid #3f3f46; border-radius: 8px; }
+    .monitor-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .monitor-inner::after { content: ""; width: 60%; height: 45%; background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+    .monitor-stand { width: 32px; height: 24px; background-color: #3f3f46; }
+    .monitor-base { width: 60px; height: 4px; background-color: #27272a; border-radius: 2px; }
+    .desktop-ready-text { color: #71717a; font-size: 0.95rem; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    /* Subview 2: Document Workspace Viewport */
+    .document-workspace { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; opacity: 0; pointer-events: none; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
+
+    /* State Switchers */
+    .workspace-card.gen-mode .desktop-ready-state, .workspace-card.doc-ready .desktop-ready-state { opacity: 0; pointer-events: none; }
+    .workspace-card.gen-mode .document-workspace, .workspace-card.doc-ready .document-workspace { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    /* Toolbar Header (Inside Workspace) */
+    .view-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 32px; flex-shrink: 0; }
+    .processing-header { font-size: 0.85rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+    
+    /* Processing Animation */
+    .processing-icon { color: #3b82f6; animation: spin 3s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .dots span { animation: dot-flash 1.4s infinite both; opacity: 0.2; }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot-flash { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+    /* Document Action Buttons */
+    .doc-actions { display: none; gap: 8px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; background-color: rgba(255, 255, 255, 0.1); color: #f3f4f6; border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .btn:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.2); }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn.primary { background-color: #3b82f6; border-color: #3b82f6; }
+    .btn.primary:hover:not(:disabled) { background-color: #2563eb; }
+
+    .workspace-card.gen-mode .processing-header { display: flex; }
+    .workspace-card.doc-ready .processing-header { display: none; }
+    .workspace-card.doc-ready .doc-actions { display: flex; margin-left: auto; }
+
+    /* Document Preview Container */
+    .document-preview-wrapper { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; position: relative; overflow: hidden; }
+    .document-skeleton { background: #ffffff; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
+
+    /* -> GENERATION MODE: Blurry loop */
+    .workspace-card.gen-mode .document-skeleton { width: 100%; max-width: 200px; padding: 16px; aspect-ratio: 3 / 4; overflow: hidden; animation: blur-loop-generation 10s ease-in-out infinite alternate; }
+    @keyframes blur-loop-generation { 0% { filter: blur(22px); opacity: 0.95; transform: scale(0.96); } 100% { filter: blur(4px); opacity: 0.55; transform: scale(1); } }
+
+    /* -> READY MODE: Expanded Document */
+    .workspace-card.doc-ready .document-skeleton { animation: none; filter: blur(0); opacity: 1; transform: scale(1); width: 100%; height: 100%; max-width: 100%; aspect-ratio: auto; overflow-y: auto; padding: 24px 32px; background: #f8fafc; scrollbar-width: thin; }
+    .workspace-card.doc-ready .document-skeleton::-webkit-scrollbar { width: 6px; }
+    .workspace-card.doc-ready .document-skeleton::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    /* HTML Render Styling: Readable clear scale (Ready Mode) */
+    .workspace-card.doc-ready .document-skeleton .rendered-document { font-size: 0.85rem; line-height: 1.6; color: #1f2933; font-family: "Helvetica Neue", Arial, sans-serif; text-align: left; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document h1 { font-size: 1.4rem; font-weight: 700; color: #0f2742; border-bottom: 2px solid #0f2742; padding-bottom: 6px; margin-bottom: 14px; text-transform: uppercase; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document h2 { font-size: 0.95rem; font-weight: 700; color: #0f2742; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 18px; margin-bottom: 8px; text-transform: uppercase; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document p { font-size: 0.85rem; margin-bottom: 12px; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document strong { font-weight: 700; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document ul { margin-left: 20px; margin-bottom: 12px; font-size: 0.85rem; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document li { margin-bottom: 6px; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document .meta-grid { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.8rem; gap: 8px; margin-bottom: 14px; background: #f1f5f9; padding: 12px; border-radius: 6px; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 32px; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document .signature-box { border-top: 1px solid #000000; padding-top: 6px; font-size: 0.75rem; }
+    .workspace-card.doc-ready .document-skeleton .rendered-document footer { font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 10px; }
+
+    /* ==================================================
+       WHATSAPP COMPONENTS SCOPED CSS (Dark Mode)
+       ================================================== */
+    .wa-app { margin: -24px -32px; min-height: calc(100% + 48px); background: #0b141a; color: #e9edef; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: left; }
+    .wa-header { background: #202c33; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; color: #e9edef; font-size: 1.15rem; font-weight: 500; }
+    .wa-header-icons { display: flex; gap: 18px; color: #aebac1; align-items: center; }
+    .wa-tabs { display: flex; background: #202c33; border-bottom: 1px solid #222d34; }
+    .wa-tab { flex: 1; text-align: center; padding: 12px 0; color: #aebac1; font-weight: 500; font-size: 0.85rem; border-bottom: 3px solid transparent; }
+    .wa-tab.active { color: #00a884; border-bottom-color: #00a884; }
+    .wa-chat-list { flex-grow: 1; overflow-y: auto; padding-bottom: 10px;}
+    .wa-chat-item { display: flex; padding: 12px 16px; gap: 14px; align-items: center; cursor: pointer; }
+    .wa-chat-item:hover { background: #202c33; }
+    .wa-avatar { width: 48px; height: 48px; border-radius: 50%; background: #6b7280; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight:bold; color: #fff; }
+    .wa-chat-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid #222d34; padding-bottom: 12px; height: 100%; }
+    .wa-chat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+    .wa-chat-name { font-size: 1.05rem; color: #e9edef; font-weight: 500; }
+    .wa-chat-time { font-size: 0.75rem; color: #8696a0; }
+    .wa-chat-msg { font-size: 0.9rem; color: #8696a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .wa-badge { background: #00a884; color: #111b21; border-radius: 50%; font-size: 0.7rem; font-weight: 600; padding: 2px 6px; }
+    .wa-chat-header { background: #202c33; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+    .wa-chat-bg { flex-grow: 1; background-color: #0b141a; background-image: radial-gradient(#111b21 1px, transparent 1px); background-size: 20px 20px; display: flex; flex-direction: column; padding: 16px; overflow-y: auto; gap: 8px; }
+    .wa-bubble { max-width: 75%; padding: 6px 10px 8px 10px; border-radius: 8px; font-size: 0.95rem; position: relative; line-height: 1.3; }
+    .wa-bubble.in { background: #202c33; color: #e9edef; align-self: flex-start; border-top-left-radius: 0; }
+    .wa-bubble.out { background: #005c4b; color: #e9edef; align-self: flex-end; border-top-right-radius: 0; }
+    .wa-bubble-time { font-size: 0.65rem; color: rgba(255,255,255,0.6); float: right; margin: 6px 0 -4px 12px; }
+    .wa-input-area { background: #202c33; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+    .wa-input-pill { flex-grow: 1; background: #2a3942; border-radius: 24px; padding: 10px 16px; color: #e9edef; font-size: 0.95rem; }
+    .wa-call-view { background: #111b21; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; }
+    .wa-call-header { text-align: center; color: #8696a0; font-size: 0.9rem; }
+    .wa-call-name { font-size: 1.8rem; color: #e9edef; margin-top: 8px; font-weight: 500;}
+    .wa-call-status { font-size: 1rem; color: #8696a0; margin-top: 6px; }
+    .wa-call-avatar { width: 140px; height: 140px; border-radius: 50%; background: #00a884; margin: 40px auto; display:flex; justify-content:center; align-items:center; font-size: 3rem; color: #111b21; font-weight:bold;}
+    .wa-call-controls { background: #202c33; width: 100%; border-radius: 24px; padding: 24px; display: flex; justify-content: space-around; align-items: center; }
+    .wa-btn-circle { width: 50px; height: 50px; border-radius: 50%; background: #374045; display: flex; justify-content: center; align-items: center; color: #e9edef; cursor: pointer; }
+    .wa-btn-circle.end-call { background: #f15c6d; color: #fff; }
+    .wa-profile-header { display: flex; align-items: center; padding: 16px; gap: 20px; background: #202c33; font-size: 1.15rem; color:#e9edef; font-weight: 500;}
+    .wa-profile-body { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; background: #111b21; }
+    .wa-profile-hero { display: flex; flex-direction: column; align-items: center; padding: 20px 16px; background: #202c33; text-align: center; border-bottom: 1px solid #111b21; }
+    .wa-profile-avatar { width: 120px; height: 120px; border-radius: 50%; background: #6b7280; margin-bottom: 16px; display:flex; align-items:center; justify-content:center; font-size: 3rem; color:#fff;}
+    .wa-profile-actions { display: flex; gap: 24px; margin-top: 20px; }
+    .wa-profile-action { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #00a884; font-size: 0.85rem; font-weight: 500; }
+    .wa-profile-card { background: #202c33; padding: 16px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .wa-card-title { font-size: 0.85rem; color: #8696a0; }
+    .wa-card-text { font-size: 1.05rem; color: #e9edef; }
+
+    /* ==================================================
+       GMAIL COMPONENTS SCOPED CSS (Dark Mode)
+       ================================================== */
+    .gm-app { margin: -24px -32px; min-height: calc(100% + 48px); background: #121212; color: #e3e3e3; display: flex; flex-direction: column; font-family: Roboto, Arial, sans-serif; text-align: left; }
+    .gm-header { padding: 12px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #2f3033; }
+    .gm-search { flex-grow: 1; background: #2f3033; border-radius: 24px; padding: 10px 16px; display: flex; align-items: center; gap: 12px; color: #e3e3e3; font-size: 0.95rem; }
+    .gm-list { flex-grow: 1; overflow-y: auto; }
+    .gm-row { display: flex; padding: 14px 16px; border-bottom: 1px solid #2f3033; gap: 14px; cursor: pointer; }
+    .gm-row:hover { background: #1a1a1a; }
+    .gm-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 500; color: #fff; flex-shrink: 0; }
+    .gm-content { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+    .gm-top { display: flex; justify-content: space-between; align-items: baseline; }
+    .gm-sender { font-weight: 700; font-size: 1rem; color: #ffffff; }
+    .gm-time { font-size: 0.75rem; color: #a0aab2; }
+    .gm-subject { font-weight: 600; font-size: 0.9rem; color: #e3e3e3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gm-snippet { font-size: 0.85rem; color: #a0aab2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gm-fab { position: absolute; bottom: 24px; right: 24px; background: #c2e7ff; color: #001d35; width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); cursor: pointer; }
+    
+    /* Gmail Single Mail */
+    .gm-read-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2f3033; color: #e3e3e3; }
+    .gm-read-icons { display: flex; gap: 20px; color: #a0aab2; }
+    .gm-read-title { font-size: 1.2rem; padding: 16px 16px 8px 16px; color: #ffffff; font-weight: 400; }
+    .gm-read-meta { display: flex; gap: 12px; padding: 8px 16px; align-items: center; }
+    .gm-read-body { padding: 16px; font-size: 0.95rem; line-height: 1.6; color: #e3e3e3; flex-grow: 1; overflow-y: auto; }
+    
+    /* Gmail Compose */
+    .gm-comp-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2f3033; color: #e3e3e3; }
+    .gm-comp-field { display: flex; padding: 14px 16px; border-bottom: 1px solid #2f3033; align-items: center; gap: 12px; font-size: 0.95rem; }
+    .gm-comp-label { color: #a0aab2; width: 60px; }
+    .gm-comp-input { background: transparent; border: none; color: #ffffff; font-size: 0.95rem; outline: none; flex-grow: 1; }
+    .gm-comp-body { padding: 16px; flex-grow: 1; display: flex; }
+    .gm-comp-textarea { width: 100%; height: 100%; background: transparent; border: none; color: #e3e3e3; font-size: 0.95rem; outline: none; resize: none; font-family: Roboto, sans-serif; }
+
+    /* ==================================================
+       BEATRICE AI WORKSPACE SCOPED CSS
+       ================================================== */
+    .bea-app { margin: -24px -32px; min-height: calc(100% + 48px); background: #09090b; color: #fafafa; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; }
+    .bea-header { padding: 20px; background: #18181b; border-bottom: 1px solid #27272a; display: flex; justify-content: space-between; align-items: center; }
+    .bea-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.02em; color: #d8b4fe; }
+    .bea-greet { padding: 24px 20px 8px 20px; font-size: 1.4rem; font-weight: 300; }
+    .bea-greet span { font-weight: 700; color: #d8b4fe; }
+    .bea-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; }
+    .bea-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
+    .bea-card:hover { border-color: #a855f7; }
+    .bea-card-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.1); color: #c084fc; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+    .bea-card-title { font-size: 0.8rem; color: #a1a1aa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+    .bea-card-val { font-size: 1.5rem; font-weight: 700; color: #fafafa; }
+    .bea-chart { padding: 0 20px 20px 20px; flex-grow: 1; }
+    .bea-chart-box { background: #18181b; border: 1px solid #27272a; border-radius: 12px; height: 120px; display: flex; align-items: flex-end; padding: 16px; gap: 8px; }
+    .bea-bar { flex: 1; background: #a855f7; border-radius: 4px 4px 0 0; opacity: 0.8; }
+
+    /* ==================================================
+       WEB BROWSER SIMULATOR SCOPED CSS
+       ================================================== */
+    .web-app { margin: -24px -32px; min-height: calc(100% + 48px); background: #ffffff; color: #171717; display: flex; flex-direction: column; font-family: -apple-system, sans-serif; text-align: left; }
+    .web-chrome { background: #f1f5f9; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #cbd5e1; }
+    .web-icons { display: flex; gap: 12px; color: #64748b; }
+    .web-address { flex-grow: 1; background: #ffffff; border-radius: 16px; padding: 6px 12px; font-size: 0.85rem; color: #334155; text-align: center; border: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 6px; }
+    .web-body { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .web-nav { display: flex; justify-content: space-between; padding: 16px 24px; align-items: center; border-bottom: 1px solid #f1f5f9; }
+    .web-logo { font-weight: 800; font-size: 1.2rem; color: #0f172a; letter-spacing: -0.02em; }
+    .web-menu { display: flex; gap: 16px; font-size: 0.85rem; font-weight: 500; color: #475569; }
+    .web-hero { padding: 40px 24px; text-align: center; background: #f8fafc; }
+    .web-hero h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 12px; line-height: 1.2; }
+    .web-hero p { font-size: 1rem; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .web-btn { background: #2563eb; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; display: inline-block; }
+    .web-features { padding: 32px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .web-feat { background: #fff; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; }
+    .web-feat h3 { font-size: 1rem; margin-bottom: 6px; color: #0f172a; }
+    .web-feat p { font-size: 0.8rem; color: #64748b; }
+
+    /* ==================================================
+       CODE-STYLED BOTTOM DROPDOWN BAR
+       ================================================== */
+    .command-bar {
+      background-color: #0d0e11;
+      border: 1px solid #1a1b1f;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .cmd-prefix { color: #4ade80; font-size: 0.8rem; font-weight: bold; user-select: none; }
+    .cmd-action { color: #60a5fa; font-size: 0.8rem; user-select: none; }
+
+    .code-select-wrapper { position: relative; flex-grow: 1; display: flex; align-items: center; }
+
+    .code-select {
+      width: 100%; background: transparent; border: none; color: #cbd5e1;
+      font-family: inherit; font-size: 0.8rem; outline: none; cursor: pointer;
+      appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 20px;
+    }
+
+    .code-select option { background-color: #0d0e11; color: #cbd5e1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; }
+    .code-select optgroup { font-weight: bold; font-style: normal; color: #94a3b8; background: #16161a;}
+    .code-select:disabled { color: #52525b; cursor: not-allowed; }
+    .code-select-arrow { position: absolute; right: 0; pointer-events: none; color: #64748b; }
+
+    /* --- Printing Overrides --- */
+    @media print {
+      body, .header, .command-bar, .desktop-ready-state, .view-header { display: none !important; }
+      html, body { background-color: #ffffff !important; color: #000000 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+      .device-container { border: none !important; box-shadow: none !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+      .main-body { padding: 0 !important; overflow: visible !important; }
+      .workspace-card { padding: 0 !important; border: none !important; background: transparent !important; }
+      .document-workspace { position: static !important; padding: 0 !important; }
+      .document-skeleton { height: auto !important; overflow: visible !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
+      @page { size: A4; margin: 20mm; }
+    }
+  </style>
 </head>
 <body>
-<div class="thinking-container">
-  <div class="thinking-header">
-    <div class="thinking-orb"></div>
-    <h2>✦ Beatrice is working</h2>
-    <p>Generating your ${serviceName.replace(/_/g, ' ')}</p>
-  </div>
-  <div class="working-footer">Processing &bull; Please hold</div>
-</div>
+
+  <div class="device-container" id="device-viewport">
+    
+    <div class="main-body">
+
+      <!-- DOMINANT WORKSPACE CARD -->
+      <div class="workspace-card gen-mode" id="workspace-container">
+        
+        <div class="desktop-ready-state">
+          <div class="monitor-graphic">
+            <div class="monitor-screen"><div class="monitor-inner"></div></div>
+            <div class="monitor-stand"></div>
+            <div class="monitor-base"></div>
+          </div>
+          <p class="desktop-ready-text">eburon_sandbox --ready</p>
+        </div>
+
+        <div class="document-workspace">
+          
+          <div class="view-header">
+            <div class="processing-header">
+              <svg class="processing-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              generating_${taskSlug}<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
+            <div class="doc-actions">
+              <button onclick="window.print()" class="btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Print
+              </button>
+              <button onclick="window.print()" class="btn primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> PDF
+              </button>
+            </div>
+          </div>
+          
+          <div class="document-preview-wrapper">
+            <div class="document-skeleton" id="doc-skeleton">
+              <div id="live-render-target" class="rendered-document"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CODE-STYLED COMMAND BAR W/ DROPDOWN -->
+      <div class="command-bar">
+        <span class="cmd-prefix">$</span>
+        <span class="cmd-action">./generate</span>
+        
+        <div class="code-select-wrapper">
+          <select id="template-select" class="code-select" disabled>
+            <option value="" disabled selected>-- ${safeName} --</option>
+            <optgroup label="[ DOCUMENTS ]" id="opt-docs"></optgroup>
+            <optgroup label="[ WHATSAPP U.I. ]" id="opt-wa"></optgroup>
+            <optgroup label="[ GMAIL U.I. ]" id="opt-gm"></optgroup>
+            <optgroup label="[ BEATRICE APP ]" id="opt-bea"></optgroup>
+            <optgroup label="[ WEB BROWSER ]" id="opt-web"></optgroup>
+          </select>
+          <svg class="code-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+
+    </div>
+  </div> 
+
+  <script>
+    // PRE-CREATED TEMPLATES & UI COMPONENTS
+    const MOCK_DATA = {
+      company: "Eburon Global Holdings, LLC",
+      counterparty: "Apex Financial Solutions Inc.",
+      date: "${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}",
+      jurisdiction: "State of Delaware",
+      amount: "$15,500,000.00",
+      project: "Project Phoenix Integration"
+    };
+
+    const buildDoc = (title, subtitle, bodyContent, includeSignatures = true) => \`
+      <h1>\${title}</h1>
+      <p><em>\${subtitle}</em></p>
+      <div class="meta-grid">
+        <div><strong>Primary Entity:</strong> \${MOCK_DATA.company}</div>
+        <div><strong>Counterparty:</strong> \${MOCK_DATA.counterparty}</div>
+        <div><strong>Effective Date:</strong> \${MOCK_DATA.date}</div>
+        <div><strong>Jurisdiction:</strong> \${MOCK_DATA.jurisdiction}</div>
+      </div>
+      \${bodyContent}
+      \${includeSignatures ? \`
+      <div class="signature-grid">
+        <div class="signature-box">
+          <strong>\${MOCK_DATA.company}</strong><br>Chief Executive Officer<br>Date: ____________________
+        </div>
+        <div class="signature-box">
+          <strong>\${MOCK_DATA.counterparty}</strong><br>Authorized Signatory<br>Date: ____________________
+        </div>
+      </div>\` : ''}
+      <footer>Strictly Private & Confidential · Generated by Eburon PC Engine</footer>
+    \`;
+
+    const Templates = [
+      { type: "doc", title: "Non-Disclosure Agreement (NDA)", html: buildDoc("Non-Disclosure Agreement", "Mutual Confidentiality and Non-Circumvention", \`<h2>1. Definition of Confidential Information</h2><p>Confidential Information includes all non-public data, financial models, source code, and business strategies shared regarding <strong>\${MOCK_DATA.project}</strong>.</p><h2>2. Obligations</h2><p>The Receiving Party shall maintain strictest confidence and limit access to personnel on a "need-to-know" basis.</p>\`) },
+      { type: "doc", title: "Master Service Agreement", html: buildDoc("Master Service Agreement", "Framework for Professional Services", \`<h2>1. Scope of Services</h2><p>This MSA governs all Statements of Work executed between the parties.</p><h2>2. Payment Terms</h2><p>Client agrees to pay invoices within Net 30 days. Total limit: <strong>\${MOCK_DATA.amount}</strong>.</p>\`) },
+      { type: "doc", title: "Letter of Intent (LOI)", html: buildDoc("Letter of Intent", "Indicative Terms for Acquisition", \`<h2>1. Proposed Transaction</h2><p>This sets forth the indicative terms to acquire assets for <strong>\${MOCK_DATA.amount}</strong>.</p><h2>2. Exclusivity</h2><p>Grants a 60-day exclusive negotiation period.</p>\`) },
+      { type: "doc", title: "Board Resolution", html: buildDoc("Corporate Board Resolution", "Unanimous Written Consent", \`<h2>1. Background</h2><p>WHEREAS, it is deemed to be in the best interest of the Corporation to enter into a strategic agreement.</p><h2>2. Resolution</h2><p>RESOLVED, that the CEO is authorized to execute agreements up to <strong>\${MOCK_DATA.amount}</strong>.</p>\`, false) },
+      { type: "doc", title: "Investment Term Sheet", html: buildDoc("Series A Term Sheet", "Summary of Principal Terms", \`<h2>1. Offering</h2><p>Amount of Financing: \${MOCK_DATA.amount}</p><h2>2. Valuation</h2><p>The pre-money valuation shall be $45,000,000.</p>\`) },
+      { type: "doc", title: "Executive Employment Agreement", html: buildDoc("Executive Employment Agreement", "C-Level Compensation", \`<h2>1. Position</h2><p>Executive is employed as Chief Operating Officer.</p><h2>2. Compensation</h2><p>Base salary plus equity grants subject to standard 4-year vesting.</p>\`) },
+      { type: "doc", title: "Shareholders Agreement", html: buildDoc("Shareholders Agreement", "Governance Restrictions", \`<h2>1. Board Composition</h2><p>The Board shall consist of 5 members.</p><h2>2. Drag-Along Rights</h2><p>If >50% approve a sale, all other Shareholders must participate.</p>\`) },
+      { type: "doc", title: "Joint Venture Agreement", html: buildDoc("Joint Venture Agreement", "Strategic Partnership", \`<h2>1. Purpose</h2><p>Parties form a JV for the commercialization of <strong>\${MOCK_DATA.project}</strong>.</p><h2>2. Capital Contributions</h2><p>Initial capital shall total <strong>\${MOCK_DATA.amount}</strong>.</p>\`) },
+      { type: "doc", title: "Memorandum of Understanding", html: buildDoc("Memorandum of Understanding", "Statement of Mutual Intent", \`<h2>1. Intent</h2><p>Parties outline their intent to collaborate on \${MOCK_DATA.project}.</p>\`) },
+      { type: "doc", title: "Quarterly Shareholder Report", html: buildDoc("Quarterly Report", "Q3 Operational Summary", \`<h2>1. Financials</h2><p>Q3 Revenue reached <strong>\${MOCK_DATA.amount}</strong>.</p>\`, false) },
+      { type: "doc", title: "IP Assignment Agreement", html: buildDoc("Intellectual Property Assignment", "Transfer of Rights", \`<h2>1. Assignment</h2><p>Assignor irrevocably conveys to \${MOCK_DATA.company} all rights.</p>\`) },
+      { type: "doc", title: "Commercial Lease", html: buildDoc("Commercial Lease", "Corporate Office Space", \`<h2>1. Premises</h2><p>Landlord leases to Tenant the commercial space.</p><h2>2. Rent</h2><p>Base rent is set at \${MOCK_DATA.amount}.</p>\`) },
+      { type: "doc", title: "Software License (EULA)", html: buildDoc("Software License", "Enterprise Terms", \`<h2>1. License</h2><p>Licensor grants non-exclusive license to use \${MOCK_DATA.project}.</p>\`) },
+      { type: "doc", title: "Vendor Agreement", html: buildDoc("Vendor Agreement", "Procurement Terms", \`<h2>1. Services</h2><p>Vendor agrees to supply goods matching quality specs.</p>\`) },
+      { type: "doc", title: "Stock Purchase Agreement", html: buildDoc("Stock Purchase", "Transfer of Equity", \`<h2>1. Sale</h2><p>Seller agrees to sell Common Shares for <strong>\${MOCK_DATA.amount}</strong>.</p>\`) },
+      { type: "doc", title: "Cease & Desist Letter", html: buildDoc("Cease and Desist", "Notice of Infringement", \`<h2>1. Demands</h2><p>You must immediately halt operations and confirm compliance.</p>\`) },
+      { type: "doc", title: "LLC Operating Agreement", html: buildDoc("Operating Agreement", "LLC Governance", \`<h2>1. Formation</h2><p>The LLC is formed under \${MOCK_DATA.jurisdiction}.</p>\`) },
+      { type: "doc", title: "Severance Agreement", html: buildDoc("Severance Agreement", "General Release", \`<h2>1. Severance Pay</h2><p>Employee receives \${MOCK_DATA.amount} in exchange for release.</p>\`) },
+      { type: "doc", title: "Independent Contractor", html: buildDoc("Independent Contractor", "1099 Terms", \`<h2>1. Scope</h2><p>Contractor will provide advisory services.</p>\`) },
+      { type: "doc", title: "Press Release", html: buildDoc("Press Release", "Immediate Distribution", \`<h2>1. Announcement</h2><p>\${MOCK_DATA.company} announces the close of <strong>\${MOCK_DATA.amount}</strong> funding.</p>\`, false) },
+    ];
+
+    const templateSelect = document.getElementById('template-select');
+    const optDocs = document.getElementById('opt-docs');
+    const workspaceCard = document.getElementById('workspace-container');
+    const liveTarget = document.getElementById('live-render-target');
+
+    Templates.forEach((template, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = template.title;
+      if (template.type === "doc") optDocs.appendChild(option);
+    });
+
+    templateSelect.addEventListener('change', (e) => {
+      const selectedIndex = e.target.value;
+      if (selectedIndex !== "") {
+        const htmlPayload = Templates[selectedIndex].html;
+        workspaceCard.classList.remove('doc-ready');
+        templateSelect.disabled = true;
+        workspaceCard.classList.add('gen-mode');
+        liveTarget.innerHTML = '<h1 style="color:transparent;">Loading</h1><p style="color:transparent; background: #e2e8f0; border-radius: 4px;">████████</p>';
+        setTimeout(() => {
+          liveTarget.innerHTML = htmlPayload;
+          workspaceCard.classList.remove('gen-mode');
+          workspaceCard.classList.add('doc-ready');
+          templateSelect.disabled = false;
+          document.getElementById('doc-skeleton').scrollTop = 0;
+        }, 800);
+      }
+    });
+  </script>
 </body>
 </html>`;
 
     setActiveDocument({
-      title: `Beatrice is working on ${serviceName.replace(/_/g, ' ')}...`,
+      title: `Beatrice is working on ${safeName}...`,
       content: thinkingPage,
       fileType: 'html'
     });
@@ -1706,6 +2109,19 @@ body {
     } else if (toolName === 'create_document' && result?.content) {
       finalHtml = result.content;
       sandboxTitle = result.title || 'Created Document';
+    } else if (toolName === 'run_sandbox_task' && result?.ok) {
+      const sandboxRes = result.result || '';
+      if (typeof sandboxRes === 'string' && (sandboxRes.toLowerCase().includes('<!doctype html') || sandboxRes.toLowerCase().includes('<html'))) {
+        try {
+          finalHtml = extractHtmlArtifact(sandboxRes);
+          sandboxTitle = 'Generated Sandbox Artifact';
+        } catch {
+          finalHtml = `<h1>🛠️ Sandbox Result</h1><div style="background:#1a1b1f; border:1px solid #1f2025; padding:20px; border-radius:18px; font-family:monospace; font-size:12px; color:#d0a78b; white-space:pre-wrap; overflow-x:auto;">${sandboxRes}</div>`;
+        }
+      } else {
+        const displayVal = typeof sandboxRes === 'object' ? JSON.stringify(sandboxRes, null, 2) : String(sandboxRes);
+        finalHtml = `<h1>🛠️ Sandbox Result</h1><div style="background:#1a1b1f; border:1px solid #1f2025; padding:20px; border-radius:18px; font-family:monospace; font-size:12px; color:#d0a78b; white-space:pre-wrap; overflow-x:auto;">${displayVal}</div>`;
+      }
     } else if (toolName === 'get_user_location' && result) {
       const mapsUrl = `https://www.google.com/maps?q=${result.lat},${result.lng}`;
       finalHtml = `<h1>📍 Your Location</h1><div style="height:350px; border-radius:18px; overflow:hidden; border:1px solid #1f2025; margin:20px 0;"><iframe src="${mapsUrl}&output=embed" style="width:100%; height:100%; border:0;"></iframe></div><div class="meta-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"><div><strong>Latitude</strong><p>${result.lat}</p></div><div><strong>Longitude</strong><p>${result.lng}</p></div><div><strong>Accuracy</strong><p>±${Math.round(result.accuracy)}m</p></div></div>`;
@@ -3654,7 +4070,7 @@ ${historyContext}
                   ]);
 
                   // Trigger visual showcase in Sandbox during execution
-                  const taskDesc = call.args?.task_description || call.args?.prompt || call.args?.query || '';
+                  const taskDesc = String(call.args?.task_description || call.args?.prompt || call.args?.query || '');
                   triggerSandboxShowcase(callName, serviceName, taskDesc);
 
                   try {
@@ -4265,7 +4681,7 @@ ${historyContext}
                         name: args.name || 'Unknown',
                         number: args.number || args.to.split('@')[0],
                         text: args.text,
-                        callId: call.id
+                        callId: call.id || ''
                       });
                       result = { ok: true, message: "Confirmation UI displayed to user. Waiting for approval." };
                     } else if (callName === 'whatsapp_action') {
@@ -4987,57 +5403,29 @@ ${historyContext}
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Google Services</span>
               </div>
               {[
-                { key: 'gmail', label: 'Gmail', desc: 'Read, send, and manage emails' },
-                { key: 'calendar', label: 'Calendar', desc: 'View and create events' },
-                { key: 'tasks', label: 'Tasks', desc: 'Manage to-do lists' },
-                { key: 'drive', label: 'Drive', desc: 'List, search, and manage files' },
-                { key: 'youtube', label: 'YouTube', desc: 'Search and discover videos' },
-                { key: 'contacts', label: 'Contacts', desc: 'Manage Google Contacts' },
-                { key: 'workspace', label: 'Workspace', desc: 'Sheets, Docs, generic API' },
-                { key: 'location', label: 'Location', desc: 'Browser geolocation' },
-              ].map((s, i, arr) => (
+                { key: 'gmail', label: 'Gmail', desc: 'Read, send, and manage emails', icon: Mail },
+                { key: 'calendar', label: 'Calendar', desc: 'View and create events', icon: Calendar },
+                { key: 'tasks', label: 'Tasks', desc: 'Manage to-do lists', icon: ListChecks },
+                { key: 'drive', label: 'Drive', desc: 'List, search, and manage files', icon: HardDrive },
+                { key: 'youtube', label: 'YouTube', desc: 'Search and discover videos', icon: Video },
+                { key: 'contacts', label: 'Contacts', desc: 'Manage Google Contacts', icon: Users },
+                { key: 'workspace', label: 'Workspace', desc: 'Sheets, Docs, generic API', icon: FileText },
+                { key: 'location', label: 'Location', desc: 'Browser geolocation', icon: MapPin },
+              ].map((s, i, arr) => {
+                const Icon = s.icon;
+                return (
                 <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                  <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  <div className="flex items-center gap-3 pr-4">
+                    <Icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                    </div>
                   </div>
-                  <button
-                    onClick={onLogin}
-                    aria-pressed={!!googleToken}
-                    className={`w-9 h-5 rounded-full transition-all duration-300 flex items-center shrink-0 cursor-pointer ${googleToken ? 'bg-[var(--accent)]' : 'bg-zinc-800'}`}
-                  >
-                    <span className={`block w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-md ${googleToken ? 'ml-[17px]' : 'ml-[3px]'}`} />
-                  </button>
+                  <ToggleSwitch pressed={!!googleToken} onToggle={onLogin} label={s.label} />
                 </div>
-              ))}
-            </div>
-
-            {/* WhatsApp Tools */}
-            <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--bg-card)]">
-              <div className="px-5 py-3 border-b border-[var(--border-light)]">
-                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">WhatsApp Tools</span>
-              </div>
-              {[
-                { key: 'wa_send', label: 'Send Messages', desc: 'Text, image, video, audio, documents' },
-                { key: 'wa_groups', label: 'Groups', desc: 'Create, manage, and message groups' },
-                { key: 'wa_read', label: 'Read Chats', desc: 'Message history and conversations' },
-                { key: 'wa_contacts', label: 'Contacts', desc: 'Browse, block, and resolve contacts' },
-                { key: 'wa_calls', label: 'Calls', desc: 'Voice/video call history' },
-                { key: 'wa_media', label: 'Media', desc: 'Images, videos, stickers, audio, documents' },
-                { key: 'wa_memory', label: 'Memory Sync', desc: 'Auto-save conversations to memory' },
-                { key: 'wa_translate', label: 'Translation', desc: 'Translate messages between languages' },
-                { key: 'wa_admin', label: 'Admin & Config', desc: 'Permissions, config, overview' },
-              ].map((s, i, arr) => (
-                <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                  <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
-                  </div>
-                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Belgian Admin Tools */}
@@ -5046,27 +5434,31 @@ ${historyContext}
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Belgian Admin Tools</span>
               </div>
               {[
-                { key: 'be_company', label: 'Company Lookup', desc: 'KBO/CBE company search by name or number' },
-                { key: 'be_vat', label: 'VIES VAT Validate', desc: 'EU VAT number validation' },
-                { key: 'be_peppol', label: 'Peppol Invoice', desc: 'Generate Peppol-compliant e-invoices' },
-                { key: 'be_tax', label: 'Tax Calendar', desc: 'Belgian tax deadline tracker' },
-                { key: 'be_property', label: 'Registration Tax', desc: 'Property registration tax calculator' },
-                { key: 'be_itsme', label: 'Itsme Navigator', desc: 'Itsme portal navigation guide' },
-                { key: 'be_language', label: 'Language Bridge', desc: 'FR/NL/EN admin letter translation' },
-                { key: 'be_social', label: 'Social Security', desc: 'Ziekenfonds/Mutualite guidance' },
-                { key: 'be_labor', label: 'Labor Law', desc: 'Notice, indexation, 13th month explainer' },
-                { key: 'be_mobility', label: 'Mobility Planner', desc: 'SNCB/NMBS train planning (iRail)' },
-              ].map((s, i, arr) => (
+                { key: 'be_company', label: 'Company Lookup', desc: 'KBO/CBE company search by name or number', icon: Building2 },
+                { key: 'be_vat', label: 'VIES VAT Validate', desc: 'EU VAT number validation', icon: Shield },
+                { key: 'be_peppol', label: 'Peppol Invoice', desc: 'Generate Peppol-compliant e-invoices', icon: FileText },
+                { key: 'be_tax', label: 'Tax Calendar', desc: 'Belgian tax deadline tracker', icon: Calendar },
+                { key: 'be_property', label: 'Registration Tax', desc: 'Property registration tax calculator', icon: Calculator },
+                { key: 'be_itsme', label: 'Itsme Navigator', desc: 'Itsme portal navigation guide', icon: Fingerprint },
+                { key: 'be_language', label: 'Language Bridge', desc: 'FR/NL/EN admin letter translation', icon: Languages },
+                { key: 'be_social', label: 'Social Security', desc: 'Ziekenfonds/Mutualite guidance', icon: Heart },
+                { key: 'be_labor', label: 'Labor Law', desc: 'Notice, indexation, 13th month explainer', icon: Scale },
+                { key: 'be_mobility', label: 'Mobility Planner', desc: 'SNCB/NMBS train planning (iRail)', icon: Train },
+              ].map((s, i, arr) => {
+                const Icon = s.icon;
+                return (
                 <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                  <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  <div className="flex items-center gap-3 pr-4">
+                    <Icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                    </div>
                   </div>
-                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
-                  </span>
+                  <ToggleSwitch pressed label={s.label} />
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Sandbox & Sub-Agents */}
@@ -5075,24 +5467,28 @@ ${historyContext}
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Sandbox &amp; Sub-Agents</span>
               </div>
               {[
-                { key: 'sb_website', label: 'Website Generator', desc: 'Full HTML/CSS websites with Pixabay images' },
-                { key: 'sb_documents', label: 'Document Generator', desc: '12 professional templates (invoice, NDA, contract, etc.)' },
-                { key: 'sb_sandbox', label: 'Sub-Agent Cascade', desc: 'Complex multi-step task delegation' },
-                { key: 'sb_browser', label: 'Browser Automation', desc: 'Cerebras + Browser-Use web automation' },
-                { key: 'sb_cerebras', label: 'Cerebras Chat', desc: 'High-speed text generation (120B param)' },
-                { key: 'sb_hermes', label: 'Hermes Multitask', desc: 'Chain-of-thought + GitHub API + code generation' },
-                { key: 'sb_worker', label: 'Eburon Worker', desc: 'Fallback text generation' },
-              ].map((s, i, arr) => (
+                { key: 'sb_website', label: 'Website Generator', desc: 'Full HTML/CSS websites with Pixabay images', icon: Globe },
+                { key: 'sb_documents', label: 'Document Generator', desc: '12 professional templates (invoice, NDA, contract, etc.)', icon: FileOutput },
+                { key: 'sb_sandbox', label: 'Sub-Agent Cascade', desc: 'Complex multi-step task delegation', icon: Network },
+                { key: 'sb_browser', label: 'Browser Automation', desc: 'Cerebras + Browser-Use web automation', icon: Monitor },
+                { key: 'sb_cerebras', label: 'Cerebras Chat', desc: 'High-speed text generation (120B param)', icon: Zap },
+                { key: 'sb_hermes', label: 'Hermes Multitask', desc: 'Chain-of-thought + GitHub API + code generation', icon: GitBranch },
+                { key: 'sb_worker', label: 'Eburon Worker', desc: 'Fallback text generation', icon: Cpu },
+              ].map((s, i, arr) => {
+                const Icon = s.icon;
+                return (
                 <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                  <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  <div className="flex items-center gap-3 pr-4">
+                    <Icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                    </div>
                   </div>
-                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
-                  </span>
+                  <ToggleSwitch pressed label={s.label} />
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Memory & Context */}
@@ -5101,21 +5497,25 @@ ${historyContext}
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Memory &amp; Context</span>
               </div>
               {[
-                { key: 'mem_save', label: 'Save to Memory', desc: 'Store information for later recall' },
-                { key: 'mem_search', label: 'Search Memory', desc: 'Retrieve past conversations and facts' },
-                { key: 'mem_session', label: 'Session Context', desc: 'Maintain conversation coherence' },
-                { key: 'mem_summary', label: 'Auto-Summary', desc: 'Periodic conversation summarization' },
-              ].map((s, i, arr) => (
+                { key: 'mem_save', label: 'Save to Memory', desc: 'Store information for later recall', icon: Save },
+                { key: 'mem_search', label: 'Search Memory', desc: 'Retrieve past conversations and facts', icon: Search },
+                { key: 'mem_session', label: 'Session Context', desc: 'Maintain conversation coherence', icon: MessageSquare },
+                { key: 'mem_summary', label: 'Auto-Summary', desc: 'Periodic conversation summarization', icon: FileText },
+              ].map((s, i, arr) => {
+                const Icon = s.icon;
+                return (
                 <div key={s.key} className={`px-5 py-3 flex items-center justify-between ${i !== arr.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                  <div className="flex flex-col gap-0.5 pr-4">
-                    <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                  <div className="flex items-center gap-3 pr-4">
+                    <Icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] text-[var(--text-primary)] font-semibold tracking-tight">{s.label}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">{s.desc}</span>
+                    </div>
                   </div>
-                  <span className="w-9 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <span className="block w-4 h-4 rounded-full bg-white shadow-md" />
-                  </span>
+                  <ToggleSwitch pressed label={s.label} />
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 

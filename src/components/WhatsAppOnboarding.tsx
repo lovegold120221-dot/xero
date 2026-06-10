@@ -284,7 +284,7 @@ export function WhatsAppOnboarding({ user, onComplete, onSkip }: WhatsAppOnboard
 
             {/* Action buttons */}
             <div className="flex gap-3">
-              <button onClick={() => setPairing(true) || handleStartPair()}
+              <button onClick={() => { setPairing(true); handleStartPair(); }}
                 disabled={pairing || (pairMethod === 'phone' && phoneNumber.length < 5)}
                 className="flex-1 bg-[#00a884] text-black font-semibold rounded-lg py-2.5 sm:py-3 hover:bg-[#06cf9c] disabled:opacity-50 text-xs sm:text-sm">
                 {pairing ? (

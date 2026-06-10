@@ -82,7 +82,7 @@ export async function sendWhatsAppMessage(
   userId: string,
   to: string,
   text: string,
-  permissions?: Record<string, boolean>,
+  permissions?: Record<string, boolean | string>,
 ): Promise<any> {
   return requestJson('/api/whatsapp/send', {
     method: 'POST',
@@ -94,7 +94,7 @@ export async function callWhatsAppTool(
   userId: string,
   tool: string,
   params: Record<string, any>,
-  permissions?: Record<string, boolean>,
+  permissions?: Record<string, boolean | string>,
 ): Promise<any> {
   return requestJson('/api/whatsapp/tool', {
     method: 'POST',
@@ -155,7 +155,7 @@ export interface WaMessageRecord {
  */
 export async function fetchWhatsAppChats(
   userId: string,
-  permissions: Record<string, boolean>,
+  permissions: Record<string, boolean | string>,
   limit = 30,
 ): Promise<{ ok: boolean; chats: WaChatSummary[]; error?: string }> {
   const res = await callWhatsAppTool(userId, 'readChats', { limit }, permissions);
@@ -169,7 +169,7 @@ export async function fetchWhatsAppChats(
 export async function fetchWhatsAppHistory(
   userId: string,
   chatId: string,
-  permissions: Record<string, boolean>,
+  permissions: Record<string, boolean | string>,
   limit = 50,
 ): Promise<{ ok: boolean; messages: WaMessageRecord[]; error?: string }> {
   const res = await callWhatsAppTool(userId, 'getMessageHistory', { chatId, limit }, permissions);
